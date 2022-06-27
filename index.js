@@ -151,4 +151,27 @@ app.post('/status', async (req, res) => {
     }
 });
 
+// remoçao de usuarios inativos
+setInterval(async () => {
+    try{
+        let active = await database.collection('participants').find().toArray();
+        active.forEach(async (participant) => {
+            const time = Date.now()
+            let timeDifference = time - participant.lastStatus
+            if (timeDifference > 10000){
+                await database.collection('participants').deleteOne({name: participant.name});
+                await database.collection('message').insertOne({
+                    from: participant.name, 
+                    to: 'Todos', 
+                    text: 'sai da sala...', 
+                    type: 'status', 
+                    time: dayjs().format('HH:mm:ss')
+                });
+            }
+        });
+    }catch (err){
+        res.send(err);
+    }
+}, 15000)
 
+app.listen(5000);
